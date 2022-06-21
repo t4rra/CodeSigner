@@ -1,7 +1,8 @@
 param (
-	$operation='help',
+	$operation,
 	$certName,
 	$folderPath,
+	[switch]$recurse,
 	$filter="*"
 )
 
@@ -14,7 +15,7 @@ function error {
 	write-host ""
 	write-host "Please read the documentation by running this file without any parameters."
 	write-host ""
-	write-host "Syntax: .\CodeSign.ps1 -operation <[Sign]/[Create]> -certName <Certificate Name> -folderPath <Folder Path> -filter <filter>"
+	write-host "Syntax: .\CodeSign.ps1 -operation <[Sign]/[Create]> -certName <Certificate Name> -folderPath <Folder Path> [-recurse] -filter <filter>"
 	exit
 }
 
@@ -32,8 +33,14 @@ if ( $operation -eq 'sign') {
 	if ( $codeCertificate -eq $null ) {
 		error -errorMSG 'Certificate not found! Create a certificate or check the spelling of the certificate.'
 	}
+
+	if ( $recurse ) {
+		$scripts=Get-ChildItem $folderPath -Filter "$($filter).ps1" -recurse | % { $_.FullName }
+	} else {
+		$scripts=Get-ChildItem $folderPath -Filter "$($filter).ps1" | % { $_.FullName }
+	}
+
 	# https://stackoverflow.com/questions/13126175/get-full-path-of-the-files-in-powershell
-	$scripts=Get-ChildItem $folderPath -Filter "$($filter).ps1" | % { $_.FullName }
 	foreach ( $script in $scripts ) {
 		Set-AuthenticodeSignature -FilePath $script -Certificate $codeCertificate -TimeStampServer http://timestamp.digicert.com
 	}
